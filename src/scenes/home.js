@@ -4,15 +4,21 @@ import { resetSession } from "../state.js";
 import { goNext } from "../flow.js";
 
 export default function home(k) {
+  k.loadSprite("background", "/assets/background.png")
   k.scene("home", () => {
     background(k, PALETTE.grass);
 
-    heading(k, "PICNIC PHYSICS", 180, 72);
-    paragraph(k, "Stack sandwiches. Dodge incoming traffic. Lay out the food.", 250);
+    k.add([
+      k.sprite("background"),
+      k.scale(3.2),
+      k.pos(0,0),
+      k.z(-10)
+    ])
 
     button(k, {
       text: "Start",
-      pos: k.vec2(GAME.width / 2, GAME.height / 2 + 60),
+      pos: k.vec2(170, 580),
+      color: PALETTE.accent,
       onClick: () => {
         resetSession();
         goNext(k, "home");
