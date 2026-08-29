@@ -26,6 +26,13 @@ export function loadAssets(k) {
   // chips sprite for spawned chips
   k.loadSprite("chips", "sprites/chips.png");
   k.loadSprite("chips", "src/assets/chips.png");
+  // end-of-game background images (3/2/1 star)
+  k.loadSprite("3-star-bg", "sprites/3-star-bg.png");
+  k.loadSprite("3-star-bg", "src/assets/3-star-bg.png");
+  k.loadSprite("2-star-bg", "sprites/2-star-bg.png");
+  k.loadSprite("2-star-bg", "src/assets/2-star-bg.png");
+  k.loadSprite("1-star-bg", "sprites/1-star-bg.png");
+  k.loadSprite("1-star-bg", "src/assets/1-star-bg.png");
   // k.loadSound("plop", "sounds/plop.mp3");
 
   // Bitmap font is optional; kaplay ships a default so text works out of the box.

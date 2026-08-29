@@ -18,6 +18,6 @@ registerScenes(k);
 // Change this to jump straight into a scene while you're building it,
 // e.g. k.go("sandwich") — the flow still works from wherever you land.
 // k.go("home");
-k.go("picnic-setup");
+k.go("home");
 
 export { k };
