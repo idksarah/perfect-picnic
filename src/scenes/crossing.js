@@ -30,7 +30,7 @@ export default function registerCrossyScene(k) {
   // ---- ground / background lanes ----
   k.add([
     k.rect(k.width(), k.height()),
-    k.color(143, 206, 107), // grass green
+    k.color(251, 245, 226),
     k.pos(0, 0),
     k.z(-10),
   ]);
@@ -40,7 +40,7 @@ export default function registerCrossyScene(k) {
       k.add([
         k.rect(k.width(), LANE_H),
         k.color(0, 0, 0),
-        k.opacity(0.05),
+        k.opacity(0.1),
         k.pos(0, k.height() - (i + 1) * LANE_H),
         k.z(-5),
       ]);
@@ -80,7 +80,8 @@ export default function registerCrossyScene(k) {
       const type = types[Math.floor(Math.random() * types.length)];
       k.add([
         k.sprite(type),
-        k.scale(lane.speed < 0.4 ? -0.4 : 0.4, 0.4),
+        // keep existing horizontal scale, triple the vertical scale for taller cars
+        k.scale(lane.speed < 1 ? -1 : 1, 1),
         k.pos((k.width() / count) * j + Math.random() * 40, lane.y),
         k.anchor("center"),
         k.area({scale: 0.2}),
@@ -128,13 +129,38 @@ export default function registerCrossyScene(k) {
       });
     }
   });
+  // WASD aliases for arrow keys
+  k.onKeyPress("w", () => {
+    player.pos.y = Math.max(20, player.pos.y - PLAYER_SPEED_STEP);
+    const row = Math.round((k.height() - player.pos.y) / LANE_H);
+    if(row > farthestRow){
+      farthestRow = row;
+      score.value = score.value + 2;
+      score.text = "Score: " + score.value
+    }
+    if (row == 10){
+      k.wait(0.5, () => {
+        recordScore("crossing", score.value);
+        k.go("results", { id: "crossing", score: score.value });
+      });
+    }
+  });
   k.onKeyPress("down", () => {
+    player.pos.y = Math.min(k.height() - 30, player.pos.y + PLAYER_SPEED_STEP);
+  });
+  k.onKeyPress("s", () => {
     player.pos.y = Math.min(k.height() - 30, player.pos.y + PLAYER_SPEED_STEP);
   });
   k.onKeyPress("left", () => {
     player.pos.x = Math.max(20, player.pos.x - 30);
   });
+  k.onKeyPress("a", () => {
+    player.pos.x = Math.max(20, player.pos.x - 30);
+  });
   k.onKeyPress("right", () => {
+    player.pos.x = Math.min(k.width() - 20, player.pos.x + 30);
+  });
+  k.onKeyPress("d", () => {
     player.pos.x = Math.min(k.width() - 20, player.pos.x + 30);
   });
 

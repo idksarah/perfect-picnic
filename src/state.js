@@ -12,7 +12,8 @@ export function resetSession() {
 }
 
 export function recordScore(minigameId, score) {
-  session.scores[minigameId] = Math.max(0, Math.round(score));
+  const s = Math.max(0, Math.round(score));
+  session.scores[minigameId] = (session.scores[minigameId] ?? 0) + s;
 }
 
 export function totalScore() {

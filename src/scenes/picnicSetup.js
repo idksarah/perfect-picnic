@@ -201,34 +201,6 @@ export default function picnicSetup(k) {
       basketOpenSprite.scale = k.vec2(sb.x, sb.y);
       k.setCursor("default");
     });
-    // ensure hover scaling works even if the engine doesn't fire onHover
-    let basketHovered = false;
-    k.onMouseMove(() => {
-      const mouse = k.mousePos();
-      const over = pointInEntity(basketArea, mouse);
-      if (over && !basketHovered) {
-        basketHovered = true;
-        basketSprite.opacity = 0;
-        basketOpenSprite.opacity = 1;
-        const bbase = basketArea._baseScale;
-        const mult = 1.1;
-        basketArea.scale = k.vec2(bbase.x * mult, bbase.y * mult);
-        const sb = basketSprite._baseScale;
-        basketSprite.scale = k.vec2(sb.x * mult, sb.y * mult);
-        basketOpenSprite.scale = k.vec2(sb.x * mult, sb.y * mult);
-        k.setCursor("pointer");
-      } else if (!over && basketHovered) {
-        basketHovered = false;
-        basketSprite.opacity = 1;
-        basketOpenSprite.opacity = 0;
-        const bbase = basketArea._baseScale;
-        basketArea.scale = k.vec2(bbase.x, bbase.y);
-        const sb = basketSprite._baseScale;
-        basketSprite.scale = k.vec2(sb.x, sb.y);
-        basketOpenSprite.scale = k.vec2(sb.x, sb.y);
-        k.setCursor("default");
-      }
-    });
     // compute a simple grid: 3 fixed columns (sandwich, lemonade, chips) and rows as needed
     const gap = 33;
     const cols = 3;

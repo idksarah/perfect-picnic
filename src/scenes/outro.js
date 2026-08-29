@@ -32,7 +32,7 @@ export default function outro(k) {
     let playBtn = null;
 
     const createOrPositionUI = (topAreaHeight) => {
-      const pad = 20;
+      const pad = 0;
       const startY = Math.max(topAreaHeight + pad, GAME.height * 0.55);
       const spacing = 40;
 
