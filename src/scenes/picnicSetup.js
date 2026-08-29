@@ -230,7 +230,18 @@ export default function picnicSetup(k) {
 
     // state for sequential reveal: row-major, per-row reveal order is sandwich -> lemonade -> chips
     let currentRow = 0;
-    let currentStage = 0; // 0 sandwich, 1 lemonade, 2 chips
+    let currentStage = 0; // kept for compatibility
+    let basketLocked = false; // when true, basket cannot be clicked until row completed
+
+    // utility: shuffle an array
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
     function revealRowStage(row, stage) {
       const type = types[stage];
@@ -259,7 +270,7 @@ export default function picnicSetup(k) {
       }
     }
 
-    findAndRevealNext();
+    // initial reveal is triggered by clicking the basket for each row
     // --- reusable drag behaviour ---------------------------------------
     // Attach "draggable" + this handler to any item you spawn.
     let dragging = null;
@@ -299,30 +310,46 @@ export default function picnicSetup(k) {
         dragging.scale = k.vec2(base.x * 1.1, base.y * 1.1);
       }
 
-      const overBasket = k.get("basket").find((o) => o.isHovering());
+      const overBasket = k.get("basket").find((o) => pointInEntity(o, k.mousePos()));
       if (overBasket) {
-        // allow only one unplaced object at a time
-        const anyUnplaced = k.get("draggable").some((o) => !o.placed);
-        if (anyUnplaced) return;
+        if (basketLocked) return;
 
-        // spawn the next item for the current stage (row/column sequence)
-        const stageType = ["sandwich", "lemonade", "chips"][currentStage];
-        if (stageType === "sandwich") {
-          if (numberSandwichesOut < numberSandwiches) {
-            numberSandwichesOut++;
-            spawnSandwich(k, basketX + 120 + 72 * (numberSandwichesOut - 1), basketY);
-          }
-        } else if (stageType === "lemonade") {
-          if (numberLemonadesOut < numberLemonades) {
-            numberLemonadesOut++;
-            spawnLemonade(k, basketX + 60 + 72 * (numberLemonadesOut - 1), basketY);
-          }
-        } else if (stageType === "chips") {
-          if (numberChipsOut < numberChips) {
-            numberChipsOut++;
-            spawnChips(k, basketX + 30 + 72 * (numberChipsOut - 1), basketY);
+        // collect the types that exist for this row
+        const typesForRow = types.filter((t) => !!targets[currentRow]?.[t]);
+        if (typesForRow.length === 0) return;
+
+        // reveal targets for this row
+        for (const t of typesForRow) {
+          const tgt = targets[currentRow][t];
+          if (tgt) {
+            tgt.opacity = 0;
+            if (tgt._borders) for (const b of tgt._borders) b.opacity = 1;
           }
         }
+
+        // spawn all objects for this row in a random order
+        const order = shuffle(typesForRow);
+        // debug: log the spawn order so randomness can be verified in console
+        console.log("Spawn order for row", currentRow, order);
+        const spacing = 72;
+        const baseX = basketX + 60;
+        for (let i = 0; i < order.length; i++) {
+          const t = order[i];
+          const spawnX = baseX + spacing * i;
+          if (t === "sandwich") {
+            numberSandwichesOut++;
+            spawnSandwich(k, spawnX, basketY);
+          } else if (t === "lemonade") {
+            numberLemonadesOut++;
+            spawnLemonade(k, spawnX, basketY);
+          } else if (t === "chips") {
+            numberChipsOut++;
+            spawnChips(k, spawnX, basketY);
+          }
+        }
+
+        // lock the basket until all targets in this row are filled
+        basketLocked = true;
       }
     });
     k.onMouseMove(() => {
@@ -410,44 +437,17 @@ export default function picnicSetup(k) {
             numberChipsOut = Math.max(0, numberChipsOut - 1);
           }
 
-          // advance to next stage in this row or next row
-          let advanced = false;
-          // try next stages in same row
-          for (let s = currentStage + 1; s < 3; s++) {
-            const type = ["sandwich", "lemonade", "chips"][s];
-            const t = targets[currentRow][type];
-            const req = type === "sandwich" ? numberSandwiches : type === "lemonade" ? numberLemonades : numberChips;
-            const placed = type === "sandwich" ? numberSandwichesPlaced : type === "lemonade" ? numberLemonadesPlaced : numberChipsPlaced;
-            if (t && placed < req) {
-              currentStage = s;
-              revealRowStage(currentRow, currentStage);
-              advanced = true;
-              break;
-            }
+          // check if the current row is fully filled; if so, unlock the basket and advance row
+          let rowDone = true;
+          for (const t of types) {
+            if (targets[currentRow] && targets[currentRow][t]) { rowDone = false; break; }
           }
-
-          if (!advanced) {
-            // move to next row and find first available slot
-            let found = false;
-            for (let r = currentRow + 1; r < numberRows; r++) {
-              for (let s = 0; s < 3; s++) {
-                const type = ["sandwich", "lemonade", "chips"][s];
-                const t = targets[r][type];
-                const req = type === "sandwich" ? numberSandwiches : type === "lemonade" ? numberLemonades : numberChips;
-                const placed = type === "sandwich" ? numberSandwichesPlaced : type === "lemonade" ? numberLemonadesPlaced : numberChipsPlaced;
-                if (t && placed < req) {
-                  currentRow = r;
-                  currentStage = s;
-                  revealRowStage(currentRow, currentStage);
-                  found = true;
-                  break;
-                }
-              }
-              if (found) break;
-            }
-            if (!found) {
-              // all done
+          if (rowDone) {
+            if (currentRow + 1 >= numberRows) {
               completeSetup();
+            } else {
+              currentRow += 1;
+              basketLocked = false;
             }
           }
         }
