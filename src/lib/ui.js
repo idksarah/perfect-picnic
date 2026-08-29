@@ -37,7 +37,7 @@ export function button(k, { text, pos, width = 280, height = 64, onClick }) {
     k.pos(pos),
     k.anchor("center"),
     k.area(),
-    k.color(...PALETTE.accent),
+    k.color(...PALETTE.cream),
     k.scale(1),
     "ui-button",
   ]);

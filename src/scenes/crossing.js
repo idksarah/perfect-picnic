@@ -8,6 +8,7 @@
 // ============================================================
 
 import { goNext } from "../flow.js"; // adjust path if flow.js lives elsewhere
+import { recordScore } from "../state.js";
 
 export default function registerCrossyScene(k) {
   k.scene("crossing", () => {
@@ -122,7 +123,8 @@ export default function registerCrossyScene(k) {
     }
     if (row == 10){
       k.wait(0.5, () => {
-        goNext(k,"crossing");
+        recordScore("crossing", score.value);
+        k.go("results", { id: "crossing", score: score.value });
       });
     }
   });
@@ -157,7 +159,8 @@ export default function registerCrossyScene(k) {
     if (timeLeft <= 0) {
       // TODO: record `farthestRow` into your shared score store here —
       // see note below about where that lives in your project
-      goNext(k, "crossing");
+      recordScore("crossing", score.value);
+      k.go("results", { id: "crossing", score: score.value });
     }
   });
   }); 
