@@ -1,6 +1,8 @@
 import { GAME, PALETTE } from "../config.js";
 
 export function background(k, rgb = PALETTE.sky) {
+  // draw a solid background color; scene-specific image backgrounds
+  // should be added inside the scene so they're not global.
   return k.add([
     k.rect(GAME.width, GAME.height),
     k.pos(0, 0),

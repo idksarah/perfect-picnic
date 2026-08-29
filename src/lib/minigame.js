@@ -11,10 +11,10 @@ import { goNext } from "../flow.js";
  *
  * Ends automatically at 0s, or early via game.finish().
  */
-export function useMinigame(k, { id, duration = GAME.minigameDuration, label = "" } = {}) {
+export function useMinigame(k, { id, duration = GAME.minigameDuration, label = "", startPaused = false } = {}) {
   let score = 0;
   let timeLeft = duration;
-  let running = true;
+  let running = !startPaused;
   const endHandlers = [];
 
   const hud = k.add([k.pos(0, 0), k.fixed(), k.z(100)]);
@@ -65,9 +65,19 @@ export function useMinigame(k, { id, duration = GAME.minigameDuration, label = "
     k.wait(0.6, () => k.go("results", { id, score }));
   }
 
+  function start() {
+    running = true;
+  }
+
+  function pause() {
+    running = false;
+  }
+
   return {
     addScore,
     finish,
+    start,
+    pause,
     onEnd: (fn) => endHandlers.push(fn),
     get score() { return score; },
     get timeLeft() { return timeLeft; },
