@@ -23,7 +23,7 @@ export const PALETTE = {
 
 // Score thresholds that pick which outro you get.
 export const OUTCOMES = [
-  { id: "perfect", min: 120, title: "AWESOME picnic!!" },
-  { id: "good", min: 70, title: "good picnic!" },
+  { id: "perfect", min: 100, title: "PERFECT picnic!!" },
+  { id: "good", min: 85, title: "good picnic!" },
   { id: "rough", min: 0, title: "rough-ahh picnic" },
 ];
