@@ -37,7 +37,7 @@ export default function outro(k) {
       const spacing = 40;
 
       if (!headingEl) {
-        headingEl = heading(k, result.title, startY, 56);
+        headingEl = heading(k, result.title, startY, 50);
         headingEl.z = 10;
         endingEl = paragraph(k, ENDINGS[result.id] ?? "", startY + spacing);
         scoreEl = paragraph(k, `final score: ${totalScore()}`, startY + spacing * 2, 30);

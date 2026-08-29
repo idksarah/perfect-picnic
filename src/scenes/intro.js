@@ -9,12 +9,27 @@ const BEATS = [
   "Three things stand between you and the perfect picnic.",
 ];
 
+
 export default function intro(k) {
+  k.loadSprite("intro_bg", "/assets/intro.png")
   k.scene("intro", () => {
     background(k, PALETTE.cream);
 
+    k.add([
+      k.sprite("intro_bg"),
+      k.scale(3.2),
+      k.pos(0,0),
+      k.z(-10)
+    ])
+
+    k.add([
+      k.rect(770, 100, { radius: 16 }),        // width, height
+      k.pos(100, 450),        // where it goes
+      k.color(85, 104, 144),     // red
+    ]);
+
     let i = 0;
-    const title = heading(k, "", 220, 40);
+    const title = heading(k, "", 500, 26, [255, 255, 255]);
 
     const render = () => { title.text = BEATS[i]; };
     render();

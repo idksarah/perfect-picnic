@@ -12,12 +12,12 @@ export function background(k, rgb = PALETTE.sky) {
   ]);
 }
 
-export function heading(k, text, y = 140, size = 56) {
+export function heading(k, text, y = 140, size = 56, color = PALETTE.ink) {
   return k.add([
     k.text(text, { size, align: "center", width: GAME.width - 120 }),
     k.pos(GAME.width / 2, y),
     k.anchor("center"),
-    k.color(...PALETTE.ink),
+    k.color(...color),
   ]);
 }
 
