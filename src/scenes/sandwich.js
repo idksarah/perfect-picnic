@@ -1,89 +1,70 @@
 import { GAME, PALETTE } from "../config.js";
-import { background } from "../lib/ui.js";
+import { background, button } from "../lib/ui.js";
 import { useMinigame } from "../lib/minigame.js";
+import bunImg from "./assets/pixelated_baguette.png";
+import cheeseImg from "./assets/cheese.png";
+import tomatoImg from "./assets/tomato.png";
+import jalapenoImg from "./assets/jalapeno.png";
+import lettuceImg from "./assets/lettuce.png";
+import kitchenImg from "./assets/kitchen.png";
 
-/**
- * MINIGAME 1 — Stack the Sandwich (45s)
- *   Minimum: drop ingredients, keep the stack standing.
- *   Scoring: ingredient +1.
- *
- *   Mechanic: a single ingredient slides left-right above the stack.
- *   Click (or space) freezes its x position and it falls straight down.
- *   Any part that overhangs the current stack width is trimmed off.
- *   A complete miss (no overlap at all) ends the game.
- *   As the stack grows taller than the screen, the camera pans upward.
- */
 export default function sandwich(k) {
+  k.loadSprite("bun", bunImg);
+  k.loadSprite("cheese", cheeseImg);
+  k.loadSprite("tomato", tomatoImg);
+  k.loadSprite("jalapeno", jalapenoImg);
+  k.loadSprite("lettuce", lettuceImg);
+  k.loadSprite("kitchen", kitchenImg);
+
+  const INGREDIENT_SPRITES = ["cheese", "tomato", "jalapeno", "lettuce"];
+
   k.scene("sandwich", () => {
     background(k, PALETTE.sky);
-    k.setGravity(0); // everything is moved manually, no physics needed
+    k.setGravity(0);
 
-    // ---------------------------------------------------------------
-    // STATE 1: loading bar -> intro text + start button
-    // ---------------------------------------------------------------
-    const barWidth = 240;
-    const barBg = k.add([
-      k.rect(barWidth, 20),
-      k.pos(GAME.width / 2 - barWidth / 2, GAME.height / 2),
-      k.color(60, 60, 60),
-      k.outline(2, k.rgb(0, 0, 0)),
-    ]);
-    const barFill = k.add([
-      k.rect(0, 20),
-      k.pos(GAME.width / 2 - barWidth / 2, GAME.height / 2),
-      k.color(120, 220, 120),
+    const game = useMinigame(k, { id: "sandwich", label: "Stack the Sandwich", startPaused: true });
+
+    // --- translucent start overlay, matches picnic-setup's style --------
+    const overlay = k.add([
+      k.rect(GAME.width, GAME.height),
+      k.pos(0, 0),
+      k.anchor("topleft"),
+      k.color(...PALETTE.ink),
+      k.opacity(0.75),
+      k.fixed(),
+      k.z(300),
     ]);
 
-    let loaded = 0;
-    const loadTimer = k.loop(0.02, () => {
-      loaded = Math.min(1, loaded + 0.02);
-      barFill.width = barWidth * loaded;
-      if (loaded >= 1) {
-        loadTimer.cancel();
-        showStartScreen();
-      }
+    const instr = k.add([
+      k.text(
+        "Let's prepare the perfect sandwich for your perfect picnic!\nClick to drop your ingredients and try to make the tallest sandwich you can!",
+        { size: 20, width: 520, align: "center" }
+      ),
+      k.pos(GAME.width / 2, GAME.height / 2 - 40),
+      k.anchor("center"),
+      k.color(...PALETTE.cream),
+      k.fixed(),
+      k.z(310),
+    ]);
+
+    const startBtn = button(k, {
+      text: "start!",
+      pos: k.vec2(GAME.width / 2, GAME.height / 2 + 60),
+      onClick: () => {
+        overlay.destroy?.();
+        instr.destroy?.();
+        startBtn.destroy?.();
+        game.start();
+        beginGameplay();
+      },
     });
-
-    function showStartScreen() {
-      k.destroy(barBg);
-      k.destroy(barFill);
-
-      const introText = k.add([
-        k.text(
-          "Let's prepare the perfect sandwich for your perfect picnic!\nClick to drop your ingredients and try to make the tallest sandwich you can!",
-          { size: 20, width: GAME.width - 80, align: "center" }
-        ),
-        k.pos(GAME.width / 2, GAME.height / 2 - 80),
-        k.anchor("center"),
-      ]);
-
-      const btn = k.add([
-        k.rect(160, 56),
-        k.pos(GAME.width / 2 - 80, GAME.height / 2 + 40),
-        k.color(90, 170, 250),
-        k.area(),
-        k.outline(2, k.rgb(0, 0, 0)),
-      ]);
-      const btnText = k.add([
-        k.text("Start", { size: 28 }),
-        k.pos(GAME.width / 2, GAME.height / 2 + 68),
-        k.anchor("center"),
-      ]);
-
-      btn.onClick(() => {
-        k.destroy(introText);
-        k.destroy(btn);
-        k.destroy(btnText);
-        startGame();
-      });
-    }
+    startBtn.fixed = true;
+    startBtn.z = 320;
 
     // ---------------------------------------------------------------
-    // STATE 2: actual gameplay
+    // gameplay, now wrapped in a function called once "start!" is clicked
     // ---------------------------------------------------------------
-    function startGame() {
-      const game = useMinigame(k, { id: "sandwich", label: "Stack the Sandwich" });
-
+    function beginGameplay() {
       const STACK_X     = GAME.width / 2;
       const BASE_Y      = GAME.height - 100;
       const LAYER_H     = 34;
@@ -92,80 +73,74 @@ export default function sandwich(k) {
       const SWING_RANGE = 160;
       const FALL_SPEED  = 16;
 
-      // --- extended sky so scrolling up never reveals empty space --------
       const SKY_HEIGHT = GAME.height * 20;
       k.add([
         k.rect(GAME.width, SKY_HEIGHT),
-        k.pos(0, GAME.height - SKY_HEIGHT), // bottom edge lines up with original ground level
-        k.color(...PALETTE.sky),
+        k.pos(0, GAME.height - SKY_HEIGHT),
+        k.color(177, 190, 206),
         k.z(-100),
       ]);
 
       k.add([
-        k.rect(GAME.width, 60),
-        k.pos(0, GAME.height - 60),
-        k.color(...PALETTE.grass),
-        "table",
+        k.sprite("kitchen", { width: GAME.width, height: GAME.height }),
+        k.pos(0, 0),
+        k.anchor("topleft"),
+        k.z(-99),
       ]);
 
-      // --- camera setup: follows the stack upward, never moves back down --
-      const CAM_TOP_MARGIN = 140; // keep this much space between stack top and top of screen
+      const CAM_TOP_MARGIN = 140;
       let camY = GAME.height / 2;
       k.camPos(GAME.width / 2, camY);
 
       function updateCameraFor(worldY) {
-        // worldY: the y-coordinate (in world space) of the highest point in play
         const visibleTop = camY - GAME.height / 2;
         if (worldY < visibleTop + CAM_TOP_MARGIN) {
           const targetCamY = worldY - CAM_TOP_MARGIN + GAME.height / 2;
-          camY = Math.min(camY, targetCamY); // camera only ever moves UP, never back down
+          camY = Math.min(camY, targetCamY);
         }
       }
 
       k.onUpdate(() => {
-        // smooth scroll toward camY rather than snapping
         const cur = k.getCamPos();
         const newY = k.lerp(cur.y, camY, k.dt() * 6);
         k.camPos(GAME.width / 2, newY);
       });
 
-      // --- the sandwich bun (static, on the ground, does not move) -------
       let stack = [{ x: STACK_X, width: BASE_WIDTH }];
       k.add([
-        k.rect(BASE_WIDTH, LAYER_H),
+        k.sprite("bun", { width: BASE_WIDTH, height: LAYER_H }),
+        k.area(),
         k.pos(STACK_X, BASE_Y),
         k.anchor("center"),
-        k.color(222, 184, 135),
       ]);
 
-      // --- single active ingredient, tracked by reference only -----------
-      let current = null;   // the ONE game object currently in play
-      let dropping = false; // false = sliding, true = falling
+      let current = null;
+      let dropping = false;
       let swingT = 0;
-      let ready = false;    // gates input + movement until the start-click buffer passes
 
       function spawnIngredient() {
         const top = stack[stack.length - 1];
         const spawnY = BASE_Y - stack.length * LAYER_H - 40;
 
+        // pick a random ingredient sprite instead of a random-color rect
+        const spriteName = INGREDIENT_SPRITES[Math.floor(Math.random() * INGREDIENT_SPRITES.length)];
+
         current = k.add([
-          k.rect(top.width, LAYER_H),
+          k.sprite(spriteName, { width: top.width, height: LAYER_H }),
           k.pos(STACK_X, spawnY),
           k.anchor("center"),
-          k.color(k.rand(100, 255), k.rand(100, 255), k.rand(100, 255)),
         ]);
         current.w = top.width;
         current.targetY = BASE_Y - stack.length * LAYER_H;
 
         dropping = false;
-        swingT = 0;
+        swingT = k.rand(0, Math.PI * 2);
 
-        updateCameraFor(spawnY); // scroll up if this new ingredient spawns off-screen
+        updateCameraFor(spawnY);
       }
 
-      // single update loop, always acting on `current` only, gated by `ready`
       k.onUpdate(() => {
-        if (!ready || !current) return;
+        if (!current) return;
 
         if (dropping) {
           current.pos.y += FALL_SPEED;
@@ -181,7 +156,7 @@ export default function sandwich(k) {
       });
 
       function tryDrop() {
-        if (ready && current && !dropping) dropping = true;
+        if (current && !dropping) dropping = true;
       }
       k.onClick(tryDrop);
       k.onKeyPress("space", tryDrop);
@@ -199,7 +174,7 @@ export default function sandwich(k) {
         const overlapRight = Math.min(right, topRight);
         const overlapWidth = overlapRight - overlapLeft;
 
-        current = null; // this piece is done being "active" either way
+        current = null;
 
         if (overlapWidth <= 2) {
           k.destroy(obj);
@@ -207,9 +182,10 @@ export default function sandwich(k) {
           return;
         }
 
+        // same cutting effect as before: trim to the overlap width and recenter
         const newX = overlapLeft + overlapWidth / 2;
-        obj.width = overlapWidth; // shrink the rect in place
-        obj.pos.x = newX;         // recenter it
+        obj.width = overlapWidth;
+        obj.pos.x = newX;
 
         stack.push({ x: newX, width: overlapWidth });
         game.addScore(1);
@@ -228,12 +204,7 @@ export default function sandwich(k) {
 
       k.onKeyPress("escape", () => game.finish());
 
-      // delay both spawning and enabling input by a short buffer, so the
-      // same click that pressed "Start" can't also register as a drop
-      k.wait(0.4, () => {
-        spawnIngredient();
-        ready = true;
-      });
+      spawnIngredient();
     }
   });
 }

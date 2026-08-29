@@ -28,5 +28,8 @@ export function loadAssets(k) {
   k.loadSprite("chips", "src/assets/chips.png");
   // k.loadSound("plop", "sounds/plop.mp3");
 
+  k.loadSprite("bun", "sprites/pixelated_baguettefr.png");
+  k.loadSprite("bun", "src/scenes/assets/pixelated_baguettefr.png");
+
   // Bitmap font is optional; kaplay ships a default so text works out of the box.
 }
