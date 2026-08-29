@@ -34,7 +34,7 @@ export default function outro(k) {
     const createOrPositionUI = (topAreaHeight) => {
       const pad = 0;
       const startY = Math.max(topAreaHeight + pad, GAME.height * 0.55);
-      const spacing = 40;
+      const spacing = 20;
 
       if (!headingEl) {
         headingEl = heading(k, result.title, startY, 50);
@@ -69,21 +69,28 @@ export default function outro(k) {
 
       const layoutBgAndUI = () => {
         if (!(bg.width && bg.height)) return false;
-        // scale to fit within width and reserve roughly top half for the image
+        // scale to fit within width, but cap the image height so UI below has room
         const maxW = GAME.width * 0.95;
         const maxH = GAME.height * 0.5;
         const sW = maxW / bg.width;
         const sH = maxH / bg.height;
-        const s = Math.min(sW, sH, 1) * 1.25;
+        // start with the previous multiplier, but we'll cap by maxTopArea below
+        let s = Math.min(sW, sH, 1) * 1.25;
+
+        const maxTopArea = GAME.height * 0.45; // reserve at least 55% for UI
+        let bgHeight = bg.height * s;
+        if (bgHeight > maxTopArea) {
+          s = maxTopArea / bg.height;
+          bgHeight = bg.height * s;
+        }
         bg.scale = k.vec2(s);
 
         // position bg so its top edge is near the top plus small padding
-        const bgHeight = bg.height * s;
-        const centerY = bgHeight / 2 + 20;
+        const centerY = bgHeight / 2 + 12;
         bg.pos = k.vec2(GAME.width / 2, centerY);
 
         // position UI below the image
-        createOrPositionUI(bgHeight + 20);
+        createOrPositionUI(bgHeight + 12);
         return true;
       };
 

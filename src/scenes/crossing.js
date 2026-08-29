@@ -127,7 +127,8 @@ export default function registerCrossyScene(k) {
           const type = types[Math.floor(Math.random() * types.length)];
           k.add([
             k.sprite(type),
-            k.scale(lane.speed < 0.4 ? -0.4 : 0.4, 0.4),
+              // keep existing horizontal scale and make cars taller
+              k.scale(lane.speed < 1 ? -1 : 1, 1),
             k.pos((k.width() / count) * j + Math.random() * 40, lane.y),
             k.anchor("center"),
             k.area({ scale: 0.2 }),
@@ -181,6 +182,32 @@ export default function registerCrossyScene(k) {
       });
       k.onKeyPress("right", () => {
         player.pos.x = Math.min(k.width() - 20, player.pos.x + 30);
+      });
+
+      // WASD aliases for arrow keys
+      k.onKeyPress("a", () => {
+        player.pos.x = Math.max(20, player.pos.x - 30);
+      });
+      k.onKeyPress("d", () => {
+        player.pos.x = Math.min(k.width() - 20, player.pos.x + 30);
+      });
+      k.onKeyPress("s", () => {
+        player.pos.y = Math.min(k.height() - 30, player.pos.y + PLAYER_SPEED_STEP);
+      });
+      k.onKeyPress("w", () => {
+        player.pos.y = Math.max(20, player.pos.y - PLAYER_SPEED_STEP);
+        const row = Math.round((k.height() - player.pos.y) / LANE_H);
+        if (row > farthestRow) {
+          farthestRow = row;
+          score.value = score.value + 2;
+          score.text = "Score: " + score.value;
+        }
+        if (row == 10) {
+          k.wait(0.5, () => {
+            recordScore("crossing", score.value);
+            k.go("results", { id: "crossing", score: score.value });
+          });
+        }
       });
 
       // reaching the very top row = "made it" -> loop back down, keep progress
