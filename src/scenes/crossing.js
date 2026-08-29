@@ -50,15 +50,18 @@ export default function registerCrossyScene(k) {
   // ---- player ----
   const player = k.add([
     k.sprite("player"),
-    k.scale(0.13),
+    k.scale(0.12),
     k.pos(k.width() / 2, k.height() - LANE_H / 2),
-    k.area(),
+    k.area({scale: 0.2}),
     k.anchor("center"),
     k.z(10),
     "player",
   ]);
 
   k.loadSprite("car", "assets/car.png");
+  k.loadSprite("truck", "assets/truck.png")
+  k.loadSprite("car2", "assets/car2.png")
+
   // ---- obstacles ----
   // Each lane gets a direction and speed; obstacles wrap around the screen.
   const laneConfigs = [];
@@ -68,16 +71,18 @@ export default function registerCrossyScene(k) {
     laneConfigs.push({ y: k.height() - LANE_H / 2 - (i + 1) * LANE_H, speed });
   }
 
+  const types = ["car", "truck", "car2"];
+
   laneConfigs.forEach((lane) => {
     const count = 2 + Math.floor(Math.random() * 2);
     for (let j = 0; j < count; j++) {
-      const isCar = Math.random() < 0.4; // "extra" obstacle type from the brief
+      const type = types[Math.floor(Math.random() * types.length)];
       k.add([
-        k.sprite("car"),
-        k.scale(0.4),
-        k.pos((k.width() / (count)) * j + Math.random() * 40, lane.y),
+        k.sprite(type),
+        k.scale(lane.speed < 0.4 ? -0.4 : 0.4, 0.4),
+        k.pos((k.width() / count) * j + Math.random() * 40, lane.y),
         k.anchor("center"),
-        k.area(),
+        k.area({scale: 0.2}),
         k.z(5),
         "obstacle",
         { speed: lane.speed },
@@ -95,7 +100,7 @@ export default function registerCrossyScene(k) {
   // ---- collision: bump player back a row on hit ----
   player.onCollide("obstacle", () => {
     player.pos.y = Math.min(k.height() - 30, player.pos.y + LANE_H);
-    k.shake(4); //shakes screen a bit
+    k.shake(2); //shakes screen a bit
     if (score.value > 0){
       score.value = score.value - 1;
       score.text = "Score: " + score.value;
@@ -140,7 +145,7 @@ export default function registerCrossyScene(k) {
 
   // ---- HUD ----
   const hud = k.add([
-    k.text(`Rows: ${farthestRow}   Time: ${timeLeft.toFixed(1)}s`, { size: 20 }),
+    k.text(`Rows Crossed: ${farthestRow}   Time: ${timeLeft.toFixed(1)}s`, { size: 20 }),
     k.pos(150, 16),
     k.z(20),
     k.fixed(),
@@ -148,7 +153,7 @@ export default function registerCrossyScene(k) {
 
   k.onUpdate(() => {
     timeLeft -= k.dt();
-    hud.text = `Rows: ${farthestRow}   Time: ${Math.max(0, timeLeft).toFixed(1)}s`;
+    hud.text = `Rows Crossed: ${farthestRow}   Time: ${Math.max(0, timeLeft).toFixed(1)}s`;
     if (timeLeft <= 0) {
       // TODO: record `farthestRow` into your shared score store here —
       // see note below about where that lives in your project
