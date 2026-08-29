@@ -8,10 +8,17 @@ export const GAME = {
 export const PALETTE = {
   sky: [168, 214, 236],
   grass: [122, 176, 92],
-  blanket: [212, 84, 84],
+  blanket: [230, 126, 110],
   cream: [247, 240, 220],
   ink: [40, 44, 38],
+  border: [235, 152, 179],
   accent: [242, 187, 68],
+  basket: [143, 89, 54],
+  target: [255, 255, 255],
+  sand: [251, 245, 226],
+  sandwichBorder: [143, 89, 54],
+  lemonadeBorder: [242, 187, 68],
+  chipsBorder: [26, 97, 128]
 };
 
 // Score thresholds that pick which outro you get.
