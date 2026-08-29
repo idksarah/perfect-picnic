@@ -1,54 +1,159 @@
-import { GAME, PALETTE } from "../config.js";
-import { background } from "../lib/ui.js";
-import { useMinigame } from "../lib/minigame.js";
+// ============================================================
+// Scene: Getting to the Picnic
+// Game: Crossy-road style forward movement through obstacle lanes.
+//
+// Registered via index.js's registerScenes(k) loop (see index.js).
+// Scene id must match the "id" used in flow.js's FLOW array ("crossing"),
+// since goNext() and k.go() look scenes up by that id.
+// ============================================================
 
-/**
- * MINIGAME 2 — Get to the Picnic (45s)
- *   Minimum: move forward through obstacles (2D crossy-road).
- *   Extra:   cars in the road lanes.
- *   Scoring: each step forward +2.
- */
-export default function crossing(k) {
+import { goNext } from "../flow.js"; // adjust path if flow.js lives elsewhere
+
+export default function registerCrossyScene(k) {
   k.scene("crossing", () => {
-    background(k, PALETTE.grass);
+  const LANE_H = 60;
+  const LANE_COUNT = Math.floor(k.height() / LANE_H);
+  const PLAYER_SPEED_STEP = LANE_H; 
+  const TIME_LIMIT = 30;
 
-    const game = useMinigame(k, { id: "crossing", label: "Get to the Picnic" });
+  let timeLeft = TIME_LIMIT;
+  let farthestRow = 0;
 
-    const TILE = 64;
-    let furthest = 0;
+  const score = k.add([
+    k.text("Score: 0", { size: 20 }),
+    k.pos(16, 16),
+    { value: 0 }
 
-    const player = k.add([
-      k.rect(TILE - 16, TILE - 16, { radius: 6 }),
-      k.pos(GAME.width / 2, GAME.height - TILE),
-      k.anchor("center"),
-      k.area(),
-      k.color(...PALETTE.blanket),
-      "player",
-    ]);
+  ]);
 
-    // --- TODO: gameplay ------------------------------------------------
-    // 1. Generate lanes ahead (safe grass / road / water) as the player climbs.
-    // 2. Spawn cars per road lane, k.move() them across, destroy off-screen.
-    // 3. player.onCollide("car", ...) -> knock back or end the run.
-    // 4. Scroll the camera (k.camPos) so the player stays near the bottom.
+  // ---- ground / background lanes ----
+  k.add([
+    k.rect(k.width(), k.height()),
+    k.color(143, 206, 107), // grass green
+    k.pos(0, 0),
+    k.z(-10),
+  ]);
 
-    const stepTo = (dx, dy) => {
-      player.moveBy(dx * TILE, dy * TILE);
-      const rowsUp = Math.round((GAME.height - TILE - player.pos.y) / TILE);
-      if (rowsUp > furthest) {
-        furthest = rowsUp;
-        game.addScore(2);
-      }
-    };
+  for (let i = 0; i < LANE_COUNT; i++) {
+    if (i % 2 === 0) {
+      k.add([
+        k.rect(k.width(), LANE_H),
+        k.color(0, 0, 0),
+        k.opacity(0.05),
+        k.pos(0, k.height() - (i + 1) * LANE_H),
+        k.z(-5),
+      ]);
+    }
+  }
 
-    k.onKeyPress("up", () => stepTo(0, -1));
-    k.onKeyPress("w", () => stepTo(0, -1));
-    k.onKeyPress("down", () => stepTo(0, 1));
-    k.onKeyPress("s", () => stepTo(0, 1));
-    k.onKeyPress("left", () => stepTo(-1, 0));
-    k.onKeyPress("a", () => stepTo(-1, 0));
-    k.onKeyPress("right", () => stepTo(1, 0));
-    k.onKeyPress("d", () => stepTo(1, 0));
-    k.onKeyPress("escape", () => game.finish());
+  k.loadSprite("player", "assets/player.png");
+  // ---- player ----
+  const player = k.add([
+    k.sprite("player"),
+    k.scale(0.13),
+    k.pos(k.width() / 2, k.height() - LANE_H / 2),
+    k.area(),
+    k.anchor("center"),
+    k.z(10),
+    "player",
+  ]);
+
+  k.loadSprite("car", "assets/car.png");
+  // ---- obstacles ----
+  // Each lane gets a direction and speed; obstacles wrap around the screen.
+  const laneConfigs = [];
+  for (let i = 0; i < LANE_COUNT - 1; i++) {
+    const dir = i % 2 === 0 ? 1 : -1;
+    const speed = (80 + Math.random() * 120) * dir;
+    laneConfigs.push({ y: k.height() - LANE_H / 2 - (i + 1) * LANE_H, speed });
+  }
+
+  laneConfigs.forEach((lane) => {
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let j = 0; j < count; j++) {
+      const isCar = Math.random() < 0.4; // "extra" obstacle type from the brief
+      k.add([
+        k.sprite("car"),
+        k.scale(0.4),
+        k.pos((k.width() / (count)) * j + Math.random() * 40, lane.y),
+        k.anchor("center"),
+        k.area(),
+        k.z(5),
+        "obstacle",
+        { speed: lane.speed },
+      ]);
+    }
   });
-}
+
+  // ---- obstacle movement + wraparound ----
+  k.onUpdate("obstacle", (obs) => {
+    obs.pos.x += obs.speed * k.dt();
+    if (obs.pos.x > k.width() + 50) obs.pos.x = -50;
+    if (obs.pos.x < -50) obs.pos.x = k.width() + 50;
+  });
+
+  // ---- collision: bump player back a row on hit ----
+  player.onCollide("obstacle", () => {
+    player.pos.y = Math.min(k.height() - 30, player.pos.y + LANE_H);
+    k.shake(4); //shakes screen a bit
+    if (score.value > 0){
+      score.value = score.value - 1;
+      score.text = "Score: " + score.value;
+    }
+    else{
+      score.text = "Score: " + score.value;
+    }
+
+  });
+
+  // ---- player movement ----
+  k.onKeyPress("up", () => {
+    player.pos.y = Math.max(20, player.pos.y - PLAYER_SPEED_STEP);
+    const row = Math.round((k.height() - player.pos.y) / LANE_H);
+    if(row > farthestRow){
+      farthestRow = row;
+      score.value = score.value + 2;
+      score.text = "Score: " + score.value
+    }
+    if (row == 10){
+      k.wait(0.5, () => {
+        goNext(k,"crossing");
+      });
+    }
+  });
+  k.onKeyPress("down", () => {
+    player.pos.y = Math.min(k.height() - 30, player.pos.y + PLAYER_SPEED_STEP);
+  });
+  k.onKeyPress("left", () => {
+    player.pos.x = Math.max(20, player.pos.x - 30);
+  });
+  k.onKeyPress("right", () => {
+    player.pos.x = Math.min(k.width() - 20, player.pos.x + 30);
+  });
+
+  // reaching the very top row = "made it" -> loop back down, keep progress
+  k.onUpdate(() => {
+    if (player.pos.y < 20) {
+      player.pos.y = k.height() - LANE_H / 2;
+    }
+  });
+
+  // ---- HUD ----
+  const hud = k.add([
+    k.text(`Rows: ${farthestRow}   Time: ${timeLeft.toFixed(1)}s`, { size: 20 }),
+    k.pos(150, 16),
+    k.z(20),
+    k.fixed(),
+  ]);
+
+  k.onUpdate(() => {
+    timeLeft -= k.dt();
+    hud.text = `Rows: ${farthestRow}   Time: ${Math.max(0, timeLeft).toFixed(1)}s`;
+    if (timeLeft <= 0) {
+      // TODO: record `farthestRow` into your shared score store here —
+      // see note below about where that lives in your project
+      goNext(k, "crossing");
+    }
+  });
+  }); 
+} // end crossing road schene

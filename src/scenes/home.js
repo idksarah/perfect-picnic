@@ -8,7 +8,7 @@ export default function home(k) {
     background(k, PALETTE.grass);
 
     heading(k, "PICNIC PHYSICS", 180, 72);
-    paragraph(k, "Stack sandwiches. Dodge wasps. Lay the blanket.", 250);
+    paragraph(k, "Stack sandwiches. Dodge incoming traffic. Lay out the food.", 250);
 
     button(k, {
       text: "Start",

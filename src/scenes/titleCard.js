@@ -10,8 +10,8 @@ export default function titleCard(k) {
     heading(k, step?.label ?? "Ready?", GAME.height / 2, 52);
 
     const countdown = paragraph(k, "3", GAME.height / 2 + 90, 40);
-    let n = 3;
-    k.loop(0.7, () => {
+    let n = 4;
+    k.loop(1, () => {
       n -= 1;
       if (n > 0) countdown.text = String(n);
       else if (n === 0) countdown.text = "GO";
