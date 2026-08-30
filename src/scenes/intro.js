@@ -22,16 +22,43 @@ export default function intro(k) {
       k.z(-10)
     ])
 
-    k.add([
-      k.rect(770, 100, { radius: 16 }),        // width, height
-      k.pos(100, 450),        // where it goes
-      k.color(85, 104, 144),     // red
+    // dynamic panel that sizes itself to the text width
+    const panelPadX = 28;
+    const panelPadY = 18;
+    const panelY = 450;
+
+    const panel = k.add([
+      k.rect(10, 10, { radius: 16 }),
+      k.pos(k.width() / 2, panelY),
+      k.anchor("center"),
+      k.color(85, 104, 144),
+      k.fixed(),
+      k.z(2),
     ]);
 
     let i = 0;
-    const title = heading(k, "", 500, 26, [255, 255, 255]);
+    const title = k.add([
+      k.text(BEATS[i], { size: 26 }),
+      k.pos(k.width() / 2, panelY),
+      k.anchor("center"),
+      k.color(255, 255, 255),
+      k.z(3),
+      k.fixed(),
+    ]);
 
-    const render = () => { title.text = BEATS[i]; };
+    const layoutTitle = () => {
+      if (!title.width || !title.height) return false;
+      const w = Math.ceil(title.width) + panelPadX * 2;
+      const h = Math.ceil(title.height) + panelPadY * 2;
+      panel.width = w;
+      panel.height = h;
+      // ensure panel is centered at same x as title
+      panel.pos = k.vec2(k.width() / 2, panelY);
+      title.pos = k.vec2(k.width() / 2, panelY);
+      return true;
+    };
+
+    const render = () => { title.text = BEATS[i]; layoutTitle(); };
     render();
 
     const advance = () => {
@@ -41,6 +68,9 @@ export default function intro(k) {
     };
 
     pressAnyKey(k, advance);
+
+    // try layout once per frame until measured
+    k.onUpdate(() => { layoutTitle(); });
 
     // TODO: swap text cards for an animated scene (packing the basket).
   });
