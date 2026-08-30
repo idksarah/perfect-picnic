@@ -2,7 +2,6 @@ import { GAME, PALETTE } from "../config.js";
 import { background, heading, paragraph, button } from "../lib/ui.js";
 import { totalScore, outcome, session } from "../state.js";
 
-// Copy per ending. Keys match OUTCOMES ids in config.js.
 const ENDINGS = {
   perfect: "YAY!! ATE IT UP!!",
   good: "warm lemonade but people still liked it :>",
@@ -12,101 +11,96 @@ const ENDINGS = {
 export default function outro(k) {
   k.scene("outro", () => {
     const result = outcome();
-    // map outcome id to a background sprite name (large image shown at the top)
-    const bgMap = {
-      perfect: "3-star-bg",
-      good: "2-star-bg",
-      rough: "1-star-bg",
-    };
+    const bgMap = { perfect: "3-star-bg", good: "2-star-bg", rough: "1-star-bg" };
     const bgName = bgMap[result.id];
 
-    // Prepare bottom UI elements but don't position until we know the image size
     const lines = Object.entries(session.scores)
       .map(([id, s]) => `${id}: ${s}`)
       .join("\n");
 
-    let headingEl = null;
-    let endingEl = null;
-    let scoreEl = null;
-    let linesEl = null;
-    let playBtn = null;
+    const PILL_Z = 4;
+    const TEXT_Z = 10;
+    const PAD = 18;
+    const GAP = 10;
 
-    const createOrPositionUI = (topAreaHeight) => {
-      const pad = 0;
-      const startY = Math.max(topAreaHeight + pad, GAME.height * 0.55);
-      const spacing = 20;
+    const headingEl = heading(k, result.title, -1000, 32);
+    const endingEl = paragraph(k, ENDINGS[result.id] ?? "", -1000, 18);
+    const scoreEl = paragraph(k, `final score: ${totalScore()}`, -1000, 18);
+    const linesEl = paragraph(k, lines, -1000, 16);
+    const playBtn = button(k, {
+      text: "Play again",
+      pos: k.vec2(GAME.width / 2, -1000),
+      onClick: () => k.go("home"),
+    });
 
-      if (!headingEl) {
-        headingEl = heading(k, result.title, startY, 50);
-        headingEl.z = 10;
-        endingEl = paragraph(k, ENDINGS[result.id] ?? "", startY + spacing);
-        scoreEl = paragraph(k, `final score: ${totalScore()}`, startY + spacing * 2, 30);
-        linesEl = paragraph(k, lines, startY + spacing * 3, 20);
-        playBtn = button(k, {
-          text: "Play again",
-          pos: k.vec2(GAME.width / 2, GAME.height - 90),
-          onClick: () => k.go("home"),
-        });
-        playBtn.z = 10;
+    const stack = [headingEl, endingEl, scoreEl, linesEl, playBtn];
+    for (const el of stack) el.z = TEXT_Z;
+
+    const hOf = (el) => el.height || (el.textSize ?? 18) * 1.3;
+
+    let pill = null;
+    let blockTop = 0;
+
+    const layout = () => {
+      const contentH =
+        stack.reduce((sum, el) => sum + hOf(el), 0) + GAP * (stack.length - 1);
+      blockTop = GAME.height - PAD - contentH;
+
+      let y = blockTop;
+      for (const el of stack) {
+        const h = hOf(el);
+        el.pos = k.vec2(GAME.width / 2, y + h / 2);
+        y += h + GAP;
+      }
+
+      const bw = (playBtn.width || 160) + 28;
+      const bh = hOf(playBtn) + 14;
+
+      if (!pill) {
+        pill = k.add([
+          k.rect(bw, bh, { radius: 8 }),
+          k.pos(playBtn.pos.x, playBtn.pos.y),
+          k.anchor("center"),
+          k.color(...PALETTE.cream),
+          k.fixed(),
+          k.z(PILL_Z),
+        ]);
       } else {
-        headingEl.pos = k.vec2(GAME.width / 2, startY);
-        endingEl.pos = k.vec2(GAME.width / 2, startY + spacing);
-        scoreEl.pos = k.vec2(GAME.width / 2, startY + spacing * 2);
-        linesEl.pos = k.vec2(GAME.width / 2, startY + spacing * 3);
-        playBtn.pos = k.vec2(GAME.width / 2, GAME.height - 90);
+        pill.width = bw;
+        pill.height = bh;
+        pill.pos = k.vec2(playBtn.pos.x, playBtn.pos.y);
       }
     };
+
+    layout();
+    k.wait(0, layout);
 
     if (bgName) {
       const bg = k.add([
         k.sprite(bgName),
-        k.pos(GAME.width / 2, 0), // will reposition after scaling
+        k.pos(GAME.width / 2, 0),
         k.anchor("center"),
         k.fixed(),
         k.z(-100),
         "outro-bg",
       ]);
 
-      const layoutBgAndUI = () => {
+      const layoutBg = () => {
         if (!(bg.width && bg.height)) return false;
-        // scale to fit within width, but cap the image height so UI below has room
-        const maxW = GAME.width * 0.95;
-        const maxH = GAME.height * 0.5;
-        const sW = maxW / bg.width;
-        const sH = maxH / bg.height;
-        // start with the previous multiplier, but we'll cap by maxTopArea below
-        let s = Math.min(sW, sH, 1) * 1.25;
-
-        const maxTopArea = GAME.height * 0.45; // reserve at least 55% for UI
-        let bgHeight = bg.height * s;
-        if (bgHeight > maxTopArea) {
-          s = maxTopArea / bg.height;
-          bgHeight = bg.height * s;
-        }
+        const avail = blockTop - 24;
+        const s = Math.min((GAME.width * 0.95) / bg.width, avail / bg.height);
         bg.scale = k.vec2(s);
-
-        // position bg so its top edge is near the top plus small padding
-        const centerY = bgHeight / 2 + 12;
-        bg.pos = k.vec2(GAME.width / 2, centerY);
-
-        // position UI below the image
-        createOrPositionUI(bgHeight + 12);
+        bg.pos = k.vec2(GAME.width / 2, 12 + (bg.height * s) / 2);
         return true;
       };
 
-      if (bg.width && bg.height) {
-        layoutBgAndUI();
-      } else {
+      if (!layoutBg()) {
         bg.onUpdate(() => {
-          if (layoutBgAndUI()) {
-            bg.onUpdate = null;
-          }
+          if (layoutBg()) bg.onUpdate = null;
         });
       }
     } else {
-      // fallback: solid background and center the UI lower on the screen
       background(k, result.id === "rough" ? PALETTE.ink : PALETTE.cream);
-      createOrPositionUI(GAME.height * 0.25);
     }
   });
 }
